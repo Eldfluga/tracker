@@ -1,6 +1,6 @@
 // Offline support: keeps a copy of the app on the phone so it opens with no signal.
 // Bump VERSION whenever any app file changes so phones pick up the update.
-const VERSION = "tracker-v2";
+const VERSION = "tracker-v3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", e => {

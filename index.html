@@ -202,14 +202,14 @@ table.ts tr.grp td{color:var(--gold);letter-spacing:.18em;font-size:11px}
   <div class="card">
     <h2>Backup</h2>
     <div class="hint" id="bkWhen"></div>
-    <p style="font-size:14px;color:var(--ink2);margin:8px 0 0">Your data only lives on this phone. Back up daily and send it to your email or Google Drive.</p>
+    <p style="font-size:14px;color:var(--ink2);margin:8px 0 0">Your data only lives on this device. Back up daily to your email or Google Drive. To sync another device, merge this backup there.</p>
     <button class="primary" id="bkBtn">Back up now</button>
     <div class="row" style="margin-top:10px">
-      <div><label class="ghost small filebtn" style="display:block;text-align:center;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-transform:none;letter-spacing:.02em;font-size:13px;cursor:pointer">Restore from file<input type="file" id="bkFile" accept="application/json,.json" style="display:none"></label></div>
+      <div><label class="ghost small filebtn" style="display:block;text-align:center;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-transform:none;letter-spacing:.02em;font-size:13px;cursor:pointer">Merge a backup file<input type="file" id="bkFile" accept="application/json,.json" style="display:none"></label></div>
       <div><button class="ghost small" style="width:100%;padding:12px" id="bkPasteBtn">Paste data</button></div>
     </div>
     <div id="bkPasteWrap" style="display:none">
-      <textarea id="bkPaste" class="copybox" style="display:block" placeholder="Paste the data you copied from the Claude version here"></textarea>
+      <textarea id="bkPaste" class="copybox" style="display:block" placeholder="Paste backup data here (from another device or the Claude version)"></textarea>
       <button class="primary" id="bkPasteGo">Import pasted data</button>
     </div>
     <div class="status" id="bkStatus"></div>
@@ -329,13 +329,21 @@ async function doBackup(){
   renderBackup(); backupNag();
 }
 function restoreFrom(text){
-  let d; try{ d=JSON.parse(text); }catch(e){ $("bkStatus").textContent="That doesn't look like a backup file."; return; }
-  if(!d||typeof d!=="object"||!d.daily||!d.meas){ $("bkStatus").textContent="That doesn't look like a backup file."; return; }
-  const nd=Object.keys(d.daily).length, nm=Object.keys(d.meas).length;
-  ask("Restore this backup?","It has "+nd+" day(s) and "+nm+" measurement day(s). It replaces everything currently on this phone.","Restore","Cancel",()=>{
-    daily=d.daily; meas=d.meas;
-    try{ localStorage.setItem("trk_daily",JSON.stringify(daily)); localStorage.setItem("trk_meas",JSON.stringify(meas)); }catch(e){ $("bkStatus").textContent="Not enough room on this phone to restore."; return; }
-    $("bkStatus").textContent="Restored."; $("bkPaste").value=""; $("bkPasteWrap").style.display="none"; renderAll(); backupNag();
+  const st=$("bkStatus");
+  let d; try{ d=JSON.parse(text); }catch(e){ st.textContent="That doesn't look like a backup file."; return; }
+  if(!d||typeof d!=="object"||!d.daily||!d.meas){ st.textContent="That doesn't look like a backup file."; return; }
+  const ok=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
+  const newer=(inc,cur)=>!cur||(Number(inc&&inc.updated)||0)>(Number(cur.updated)||0);
+  const dk=Object.keys(d.daily).filter(k=>ok(k)&&newer(d.daily[k],daily[k]));
+  const mk=Object.keys(d.meas).filter(k=>ok(k)&&newer(d.meas[k],meas[k]));
+  const same=Object.keys(d.daily).length+Object.keys(d.meas).length-dk.length-mk.length;
+  if(!dk.length&&!mk.length){ st.textContent="Already up to date. Nothing new in that backup."; return; }
+  ask("Merge this backup?",dk.length+" day(s) and "+mk.length+" measurement day(s) are new or newer in the backup and will be updated here. "+same+" are already up to date here. Nothing gets deleted.","Merge","Cancel",()=>{
+    const nd=Object.assign({},daily), nm=Object.assign({},meas);
+    dk.forEach(k=>nd[k]=Object.assign({},d.daily[k],{date:k})); mk.forEach(k=>nm[k]=Object.assign({},d.meas[k],{date:k}));
+    try{ localStorage.setItem("trk_daily",JSON.stringify(nd)); localStorage.setItem("trk_meas",JSON.stringify(nm)); }catch(e){ st.textContent="Not enough room on this device to merge."; return; }
+    daily=nd; meas=nm;
+    st.textContent="Merged. "+dk.length+" day(s) and "+mk.length+" measurement day(s) updated."; $("bkPaste").value=""; $("bkPasteWrap").style.display="none"; renderAll(); backupNag();
   });
 }
 
