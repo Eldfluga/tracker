@@ -202,7 +202,7 @@ table.ts tr.grp td{color:var(--gold);letter-spacing:.18em;font-size:11px}
   <div class="card">
     <h2>Backup</h2>
     <div class="hint" id="bkWhen"></div>
-    <p style="font-size:14px;color:var(--ink2);margin:8px 0 0">Your data only lives on this phone. Back up weekly and send it to your email or Google Drive.</p>
+    <p style="font-size:14px;color:var(--ink2);margin:8px 0 0">Your data only lives on this phone. Back up daily and send it to your email or Google Drive.</p>
     <button class="primary" id="bkBtn">Back up now</button>
     <div class="row" style="margin-top:10px">
       <div><label class="ghost small filebtn" style="display:block;text-align:center;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-transform:none;letter-spacing:.02em;font-size:13px;cursor:pointer">Restore from file<input type="file" id="bkFile" accept="application/json,.json" style="display:none"></label></div>
@@ -304,9 +304,10 @@ async function initStore(){
 function lastBackup(){ try{ return Number(localStorage.getItem("trk_lastBackup"))||0; }catch(e){ return 0; } }
 function backupNag(){
   const has=Object.keys(daily).length||Object.keys(meas).length; if(!has){ banner(""); return; }
-  const lb=lastBackup(), days=lb?Math.floor((Date.now()-lb)/864e5):null;
-  if(days===null) banner("Your data only lives on this phone. Back it up from the History tab.");
-  else if(days>=7) banner("Last backup was "+days+" days ago. Back up from the History tab.");
+  const lb=lastBackup();
+  const lbDay=lb?(d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()))(new Date(lb)):null;
+  if(!lbDay) banner("Your data only lives on this phone. Tap here to back up.");
+  else if(lbDay!==todayStr()) banner("You haven't backed up today. Tap here to back up.");
   else banner("");
 }
 function renderBackup(){
@@ -785,6 +786,8 @@ function checkWeight(){
 }
 
 $("bkBtn").addEventListener("click",doBackup);
+$("banner").style.cursor="pointer";
+$("banner").addEventListener("click",()=>{ location.hash="#history"; setTimeout(()=>$("bkBtn").scrollIntoView({behavior:"smooth",block:"center"}),50); });
 $("bkFile").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f) return; restoreFrom(await f.text()); e.target.value=""; });
 $("bkPasteBtn").addEventListener("click",()=>{ const w=$("bkPasteWrap"); w.style.display=w.style.display==="none"?"block":"none"; if(w.style.display==="block") $("bkPaste").focus(); });
 $("bkPasteGo").addEventListener("click",()=>restoreFrom($("bkPaste").value.trim()));
