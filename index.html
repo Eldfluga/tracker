@@ -205,7 +205,7 @@ table.ts tr.grp td{color:var(--gold);letter-spacing:.18em;font-size:11px}
     <p style="font-size:14px;color:var(--ink2);margin:8px 0 0">Your data only lives on this device. Back up daily to your email or Google Drive. To sync another device, merge this backup there.</p>
     <button class="primary" id="bkBtn">Back up now</button>
     <div class="row" style="margin-top:10px">
-      <div><label class="ghost small filebtn" style="display:block;text-align:center;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-transform:none;letter-spacing:.02em;font-size:13px;cursor:pointer">Merge a backup file<input type="file" id="bkFile" accept="application/json,.json" style="display:none"></label></div>
+      <div><label class="ghost small filebtn" style="display:block;text-align:center;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-transform:none;letter-spacing:.02em;font-size:13px;cursor:pointer">Merge a backup file<input type="file" id="bkFile" accept=".txt,.json,text/plain,application/json" style="display:none"></label></div>
       <div><button class="ghost small" style="width:100%;padding:12px" id="bkPasteBtn">Paste data</button></div>
     </div>
     <div id="bkPasteWrap" style="display:none">
@@ -316,11 +316,11 @@ function renderBackup(){
 }
 async function doBackup(){
   const data={app:"daily-tracker",version:1,exported:new Date().toISOString(),daily,meas};
-  const name="daily-tracker-backup-"+todayStr()+".json";
-  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const name="daily-tracker-backup-"+todayStr()+".txt";
+  const blob=new Blob([JSON.stringify(data)],{type:"text/plain"});
   let done=false;
   try{
-    const file=new File([blob],name,{type:"application/json"});
+    const file=new File([blob],name,{type:"text/plain"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:"Daily Tracker backup"}); done=true; }
   }catch(e){ if(e&&e.name==="AbortError") return; }
   if(!done){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); }
